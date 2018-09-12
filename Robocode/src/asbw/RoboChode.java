@@ -1,91 +1,72 @@
 package asbw;
-/**
- * Copyright (c) 2001-2017 Mathew A. Nelson and Robocode contributors
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v1.0
- * which accompanies this distribution, and is available at
- * http://robocode.sourceforge.net/license/epl-v10.html
- */
 
 import robocode.*;
-
 import java.awt.*;
-
-
-import robocode.HitByBulletEvent;
-import robocode.Robot;
-import robocode.ScannedRobotEvent;
-
-import java.awt.*;
-
 
 /**
- * PaintingRobot - a sample robot that demonstrates the onPaint() and
- * getGraphics() methods.
- * Also demonstrate feature of debugging properties on RobotDialog
+ * SuperTracker - a Super Sample Robot by CrazyBassoonist based on the robot Tracker by Mathew Nelson and maintained by Flemming N. Larsen
  * <p/>
- * Moves in a seesaw motion, and spins the gun around at each end.
- * When painting is enabled for this robot, a red circle will be painted
- * around this robot.
- *
- * @author Stefan Westen (original SGSample)
- * @author Pavel Savara (contributor)
+ * Locks onto a robot, moves close, fires when close.
  */
 public class RoboChode extends AdvancedRobot {
-
+    int moveDirection=1;//which way to move
     /**
-     * PaintingRobot's run method - Seesaw
+     * run:  Tracker's main run function
      */
     public void run() {
-        while (true) {
-            ahead(100);
-            turnGunRight(360);
-            back(100);
-            turnGunRight(360);
-        }
+        setAdjustRadarForRobotTurn(true);//keep the radar still while we turn
+        setBodyColor(Color.BLACK);
+        setGunColor(Color.RED);
+        setRadarColor(Color.BLACK);
+        setScanColor(Color.white);
+        setBulletColor(Color.RED);
+        setAdjustGunForRobotTurn(true); // Keep the gun still when we turn
+        turnRadarRightRadians(Double.POSITIVE_INFINITY);//keep turning radar right
     }
 
     /**
-     * Fire when we see a robot
+     * onScannedRobot:  Here's the good stuff
      */
     public void onScannedRobot(ScannedRobotEvent e) {
-        // demonstrate feature of debugging properties on RobotDialog
-        setDebugProperty("lastScannedRobot", e.getName() + " at " + e.getBearing() + " degrees at time " + getTime());
-
-        fire(1);
+        double absBearing=e.getBearingRadians()+getHeadingRadians();//enemies absolute bearing
+        double latVel=e.getVelocity() * Math.sin(e.getHeadingRadians() -absBearing);//enemies later velocity
+        double gunTurnAmt;//amount to turn our gun
+        setTurnRadarLeftRadians(getRadarTurnRemainingRadians());//lock on the radar
+        if(Math.random()>.9){
+            setMaxVelocity((12*Math.random())+12);//randomly change speed
+        }
+        if (e.getDistance() > 400) {//if distance is greater than 150
+            gunTurnAmt = robocode.util.Utils.normalRelativeAngle(absBearing- getGunHeadingRadians()+latVel/20);//amount to turn our gun, lead just a little bit
+            setTurnGunRightRadians(gunTurnAmt); //turn our gun
+            setTurnRightRadians(robocode.util.Utils.normalRelativeAngle(absBearing-getHeadingRadians()+latVel/getVelocity()));//drive towards the enemies predicted future location
+            setAhead((e.getDistance() - 300)*moveDirection);//move forward
+            setFire(0.1);//fire
+        }
+        if (e.getDistance() > 200) {//if distance is greater than 150
+            gunTurnAmt = robocode.util.Utils.normalRelativeAngle(absBearing- getGunHeadingRadians()+latVel/18);//amount to turn our gun, lead just a little bit
+            setTurnGunRightRadians(gunTurnAmt); //turn our gun
+            setTurnRightRadians(robocode.util.Utils.normalRelativeAngle(absBearing-getHeadingRadians()+latVel/getVelocity()));//drive towards the enemies predicted future location
+            setAhead((e.getDistance() - 250)*moveDirection);//move forward
+            setFire(1.5);//fire
+        }
+        else{//if we are close enough...
+            gunTurnAmt = robocode.util.Utils.normalRelativeAngle(absBearing- getGunHeadingRadians()+latVel/12);//amount to turn our gun, lead just a little bit
+            setTurnGunRightRadians(gunTurnAmt);//turn our gun
+            setTurnLeft(-90-e.getBearing()); //turn perpendicular to the enemy
+            setAhead((e.getDistance() - 200)*moveDirection);//move forward
+            setFire(3);//fire
+        }
     }
-
-    /**
-     * We were hit!  Turn perpendicular to the bullet,
-     * so our seesaw might avoid a future shot.
-     * In addition, draw orange circles where we were hit.
-     */
-    public void onHitByBullet(HitByBulletEvent e) {
-        // demonstrate feature of debugging properties on RobotDialog
-        setDebugProperty("lastHitBy", e.getName() + " with power of bullet " + e.getPower() + " at time " + getTime());
-
-        // show how to remove debugging property
-        setDebugProperty("lastScannedRobot", null);
-
-        // gebugging by painting to battle view
-        Graphics2D g = getGraphics();
-
-        g.setColor(Color.orange);
-        g.drawOval((int) (getX() - 55), (int) (getY() - 55), 110, 110);
-        g.drawOval((int) (getX() - 56), (int) (getY() - 56), 112, 112);
-        g.drawOval((int) (getX() - 59), (int) (getY() - 59), 118, 118);
-        g.drawOval((int) (getX() - 60), (int) (getY() - 60), 120, 120);
-
-        turnLeft(90 - e.getBearing());
+    public void onHitWall(HitWallEvent e){
+        moveDirection=-moveDirection;//reverse direction upon hitting a wall
     }
-
     /**
-     * Paint a red circle around our PaintingRobot
+     * onWin:  Do a victory dance
      */
-    public void onPaint(Graphics2D g) {
-        g.setColor(Color.red);
-        g.drawOval((int) (getX() - 50), (int) (getY() - 50), 100, 100);
-        g.setColor(new Color(0, 0xFF, 0, 30));
-        g.fillOval((int) (getX() - 60), (int) (getY() - 60), 120, 120);
+    public void onWin(WinEvent e) {
+        for (int i = 0; i < 50; i++) {
+            turnRight(30);
+            turnLeft(30);
+        }
     }
 }
