@@ -23,7 +23,7 @@ public class RoboChode extends AdvancedRobot {
 
     final static double firePower= 1.92;//Our bulletpower.
     final static double BULLET_DAMAGE=firePower*4;//Formula for bullet damage.
-    final static double bulletSpeed=20*firePower;//Formula for bullet speed.
+    final static double BULLET_SPEED=20*firePower;//Formula for bullet speed.
 
     //Variables
     static double dir=1.25;
@@ -58,7 +58,7 @@ public class RoboChode extends AdvancedRobot {
         double absBearing=e.getBearingRadians()+getHeadingRadians();
         double absoluteBearing = getHeadingRadians() + e.getBearingRadians();//robot's absolute bearing
         double randomGuessFactor = (Math.random() - .8) * 4;
-        double maxEscapeAngle = Math.asin(6.0/(10 - (4 *Math.min(3,getEnergy()/10))));//farthest the enemy can move in the amount of time it would take for a bullet to reach them
+        double maxEscapeAngle = Math.asin(4.0/(10 - (5 *Math.min(3,getEnergy()/10))));//farthest the enemy can move in the amount of time it would take for a bullet to reach them
         double randomAngle = randomGuessFactor * maxEscapeAngle;//random firing angle
         double firingAngle = Utils.normalRelativeAngle(absoluteBearing - getGunHeadingRadians()+randomAngle/5);//amount to turn our gun
 
@@ -69,39 +69,62 @@ public class RoboChode extends AdvancedRobot {
         if(Math.random()>.6){
             setMaxVelocity((12*Math.random())+12);//randomly change speed
         }
-        if (e.getDistance() > 250) {
-            gunTurnAmt = robocode.util.Utils.normalRelativeAngle(absBearing- getGunHeadingRadians()+latVel/15);
+        if (e.getDistance() > 300) {
+            gunTurnAmt = robocode.util.Utils.normalRelativeAngle(absBearing- getGunHeadingRadians()+latVel/22);
             setTurnRightRadians(robocode.util.Utils.normalRelativeAngle(absBearing-getHeadingRadians()+latVel/getVelocity()));//Turn perpendicular to them
             setTurnGunRightRadians(gunTurnAmt);//Aim!
             setAhead((e.getDistance() - 140)*movementDirection);
             setFire(firePower/1.5);//Fire, using less energy if we have low energy
             setTurnRadarRightRadians(Utils.normalRelativeAngle(absoluteBearing - getRadarHeadingRadians()));//lock on the radar
-            if (Math.random() > .750) {
+            if (Math.random() > .8) {
                 dir = -dir;
             }
         }
 
-        else if (e.getDistance() > 150) {//if distance is greater than 150
-            gunTurnAmt = robocode.util.Utils.normalRelativeAngle(absBearing- getGunHeadingRadians()+latVel/18);//amount to turn our gun, lead just a little bit
+        else if (e.getDistance() > 190) {//if distance is greater than 150
+            gunTurnAmt = robocode.util.Utils.normalRelativeAngle(absBearing- getGunHeadingRadians()+latVel/20);//amount to turn our gun, lead just a little bit
             setTurnGunRightRadians(gunTurnAmt); //turn our gun
             setTurnRightRadians(robocode.util.Utils.normalRelativeAngle(absBearing-getHeadingRadians()+latVel/getVelocity()));//drive towards the enemies predicted future location
-            setAhead((e.getDistance() - 140)*movementDirection);//move forward
+            setAhead((e.getDistance() - 90)*movementDirection);//move forward
             setTurnRadarRightRadians(Utils.normalRelativeAngle(absoluteBearing - getRadarHeadingRadians()));
             setFire(firePower);//fire
-            if (Math.random() > .6) {
+            if (Math.random() > .75) {
                 dir = -dir;
             }
         }
         else {//if we are close enough...
-            gunTurnAmt = robocode.util.Utils.normalRelativeAngle(absBearing- getGunHeadingRadians()+latVel/12);//amount to turn our gun, lead just a little bit
-            setTurnGunRightRadians(gunTurnAmt);//turn our gun
-            setTurnLeft(-90-e.getBearing()); //turn perpendicular to the enemy
-            setAhead((e.getDistance() - 140)*movementDirection);//move forward
-            setTurnRadarRightRadians(Utils.normalRelativeAngle(absoluteBearing - getRadarHeadingRadians()));
-            setFire(firePower*1.5);//fire
-            if (Math.random() > .5) {
-                dir = -dir;
+            double enemyHeading = e.getHeadingRadians();
+            double enemyHeadingChange = enemyHeading - oldEnemyHeading;
+            oldEnemyHeading = enemyHeading;
+
+		/*This method of targeting is know as circular targeting; you assume your enemy will
+		 *keep moving with the same speed and turn rate that he is using at fire time.The
+		 *base code comes from the wiki.
+		*/
+            double deltaTime = 0;
+            double predictedX = getX()+e.getDistance()*Math.sin(absBearing);
+            double predictedY = getY()+e.getDistance()*Math.cos(absBearing);
+            while((++deltaTime) * BULLET_SPEED <  Point2D.Double.distance(getX(), getY(), predictedX, predictedY)){
+
+                //Add the movement we think our enemy will make to our enemy's current X and Y
+                predictedX += Math.sin(enemyHeading) * e.getVelocity();
+                predictedY += Math.cos(enemyHeading) * e.getVelocity();
+
+
+                //Find our enemy's heading changes.
+                enemyHeading += enemyHeadingChange;
+
+                //If our predicted coordinates are outside the walls, put them 18 distance units away from the walls as we know
+                //that that is the closest they can get to the wall (Bots are non-rotating 36*36 squares).
+                predictedX=Math.max(Math.min(predictedX,getBattleFieldWidth()-18),18);
+                predictedY=Math.max(Math.min(predictedY,getBattleFieldHeight()-18),18);
+
             }
+            double aim = Utils.normalAbsoluteAngle(Math.atan2(  predictedX - getX(), predictedY - getY()));
+
+            //Aim and fire.
+            setTurnGunRightRadians(Utils.normalRelativeAngle(aim - getGunHeadingRadians()));
+            setFire(3);
         }
 
         //This makes the amount we want to turn be perpendicular to the enemy.
