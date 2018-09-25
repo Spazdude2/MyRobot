@@ -101,21 +101,21 @@ public class SuperCrazy extends AdvancedRobot {
  
 		/* This is too clean for crazy! Add some randomness. */
 		goalDirection += (Math.random()-0.5) * (Math.random()*2.0 + 1.0);
- 
+
 		/* Smooth around the walls, if we smooth too much, reverse direction! */
 		double x = getX();
 		double y = getY();
 		double smooth = 0;
- 
+
 		/* Calculate the smoothing we would end up doing if we actually smoothed walls. */
 		Rectangle2D fieldRect = new Rectangle2D.Double(18, 18, getBattleFieldWidth()-36, getBattleFieldHeight()-36);
- 
+
 		while (!fieldRect.contains(x+Math.sin(goalDirection)*wallStick, y+ Math.cos(goalDirection)*wallStick)) {
 			/* turn a little toward enemy and try again */
 			goalDirection += moveDirection*0.1;
 			smooth += 0.1;
 		}
- 
+
 		/* If we would have smoothed to much, then reverse direction. */
 		/* Add && sameDirectionCounter != 0 check to make this smarter */
 		if(smooth > 0.5 + Math.random()*0.125) {
