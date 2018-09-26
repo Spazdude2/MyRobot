@@ -15,7 +15,7 @@ import robocode.util.Utils;
  */
 public class RoboChode extends AdvancedRobot {
     int moveDirection=1;//which way to move
-    public double wallStick = 75;
+    public double wallStick = 120;
     public int sameDirectionCounter = 0;
 
     /**
@@ -39,15 +39,11 @@ public class RoboChode extends AdvancedRobot {
 
         double absBearing = e.getBearingRadians() + getHeadingRadians();
         /* Move perpendicular to our enemy, based on our movement direction */
-        double goalDirection = absBearing-Math.PI/2.0*moveDirection;
-
-		/* This is too clean for crazy! Add some randomness. */
-        goalDirection += (Math.random()-0.5) * (Math.random()*2.0 + 1.0);
+        double goalDirection = absBearing-Math.PI/1.5*moveDirection;
 
 		/* Smooth around the walls, if we smooth too much, reverse direction! */
         double x = getX();
         double y = getY();
-        double smooth = 0;
 
 		/* Calculate the smoothing we would end up doing if we actually smoothed walls. */
         Rectangle2D fieldRect = new Rectangle2D.Double(18, 18, getBattleFieldWidth()-36, getBattleFieldHeight()-36);
@@ -55,7 +51,6 @@ public class RoboChode extends AdvancedRobot {
         while (!fieldRect.contains(x+Math.sin(goalDirection)*wallStick, y+ Math.cos(goalDirection)*wallStick)) {
 			/* turn a little toward enemy and try again */
             goalDirection += moveDirection*0.1;
-            smooth += 0.1;
         }
 
 		/* If we would have smoothed to much, then reverse direction. */
@@ -71,14 +66,14 @@ public class RoboChode extends AdvancedRobot {
             setTurnGunRightRadians(gunTurnAmt); //turn our gun
             setTurnRightRadians(robocode.util.Utils.normalRelativeAngle(absBearing-getHeadingRadians()+latVel/getVelocity()));//drive towards the enemies predicted future location
             setAhead((e.getDistance() + 150)*moveDirection);//move forward
-            setFire(1.92);//fire
+            setFire(0.75);//fire
         }
         if (e.getDistance() > 150) {//if distance is greater than 150
-            gunTurnAmt = robocode.util.Utils.normalRelativeAngle(absBearing- getGunHeadingRadians()+latVel/22);//amount to turn our gun, lead just a little bit
+            gunTurnAmt = robocode.util.Utils.normalRelativeAngle(absBearing - getGunHeadingRadians()+latVel/22);//amount to turn our gun, lead just a little bit
             setTurnGunRightRadians(gunTurnAmt); //turn our gun
             setTurnRightRadians(robocode.util.Utils.normalRelativeAngle(absBearing-getHeadingRadians()+latVel/getVelocity()));//drive towards the enemies predicted future location
             setAhead((e.getDistance() + 175)*moveDirection);//move forward
-            setFire(2.25);//fire
+            setFire(1.92);//fire
         }
         else{//if we are close enough...
             gunTurnAmt = robocode.util.Utils.normalRelativeAngle(absBearing- getGunHeadingRadians()+latVel/15);//amount to turn our gun, lead just a little bit
@@ -103,6 +98,7 @@ public class RoboChode extends AdvancedRobot {
     public void onHitByBullet(HitByBulletEvent e){
         // if hit buy a bullet
         // target the one who hit us!
+        setTurnLeft(45+e.getBearing()); //turn perpendicular to the enemy
         moveDirection = -moveDirection;
     }
 }

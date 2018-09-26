@@ -32,7 +32,6 @@ public class SuperRamFire extends AdvancedRobot {
 		setBodyColor(Color.lightGray);
 		setGunColor(Color.gray);
 		setRadarColor(Color.darkGray);
- 
 		setAdjustGunForRobotTurn(true);
 		setAdjustRadarForGunTurn(true);
 		setTurnRadarRightRadians(Double.POSITIVE_INFINITY);
